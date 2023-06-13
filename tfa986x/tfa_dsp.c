@@ -8,8 +8,6 @@
  *
  */
 
-#include <linux/file.h>
-#include <linux/fs.h>
 #include "inc/dbgprint.h"
 #include "inc/tfa_device.h"
 #include "inc/tfa_container.h"
@@ -5617,15 +5615,14 @@ int tfa_dev_mtp_get(struct tfa_device *tfa, enum tfa_mtp item)
 		break;
 	case TFA_MTP_EX:
 		/* read MTPEX, if calibration is done */
-		value = tfa_efs_mtp_get(tfa);
-		value = (value > 0) ? 1 : 0;
+		value = (tfa->mohm[0] > 0) ? 1 : 0;
 		tfa->mtpex = value;
 		break;
 	case TFA_MTP_RE25:
 	case TFA_MTP_RE25_PRIM:
 	case TFA_MTP_RE25_SEC:
 		/* read RE25, calibration data */
-		value = tfa_efs_mtp_get(tfa);
+		value = tfa->mohm[0];
 		break;
 	case TFA_MTP_LOCK:
 		break;
@@ -5641,7 +5638,8 @@ enum tfa_error tfa_dev_mtp_set(struct tfa_device *tfa,
 	enum tfa_mtp item, int value)
 {
 	enum tfa_error err = tfa_error_ok;
-	int efs_err = 0, rdc = 0;
+	enum tfa98xx_error ret;
+	int rdc = 0;
 
 	/* write data to efs */
 	switch (item) {
@@ -5651,31 +5649,32 @@ enum tfa_error tfa_dev_mtp_set(struct tfa_device *tfa,
 	case TFA_MTP_EX:
 		/* write MTPEX, if calibration is done */
 		if (value == 0) {
-			efs_err = tfa_efs_mtp_set(tfa, 0);
-			if (efs_err >= 0)
-				tfa->reset_mtpex = 0;
+			tfa->mohm[0] = 0;
+			tfa->reset_mtpex = 0;
 		} else {
-			rdc = tfa_efs_mtp_get(tfa);
-			if (rdc <= 0) {
+			if (tfa->mohm[0] <= 0) {
 				/* use default calibration data */
 				rdc = tfa->dummy_cal;
 				if (rdc == 0)
 					rdc = DUMMY_CALIBRATION_DATA;
-				efs_err = tfa_efs_mtp_set(tfa, rdc);
+				tfa->mohm[0] = rdc;
 			}
 		}
-		if (efs_err < 0)
-			err = tfa_error_device;
-		else
-			tfa->mtpex = value;
+		tfa->mtpex = value;
 		break;
 	case TFA_MTP_RE25:
 	case TFA_MTP_RE25_PRIM:
 	case TFA_MTP_RE25_SEC:
+		if (value != 0) { /* check range for non-zero value */
+			ret = tfa_calibration_range_check(tfa,
+				tfa_get_channel_from_dev_idx(tfa, -1), value);
+			if (ret != TFA98XX_ERROR_OK) {
+				err = tfa_error_bad_param;
+				goto tfa_dev_mtp_set_exit;
+			}
+		}
 		/* write RE25, calibration data */
-		efs_err = tfa_efs_mtp_set(tfa, value);
-		if (efs_err < 0)
-			err = tfa_error_device;
+		tfa->mohm[0] = value;
 		break;
 	case TFA_MTP_LOCK:
 		break;
@@ -5684,6 +5683,7 @@ enum tfa_error tfa_dev_mtp_set(struct tfa_device *tfa,
 		break;
 	}
 
+tfa_dev_mtp_set_exit:
 	if (err != tfa_error_ok)
 		pr_err("%s: error (%d) in setting MTP (item %d with %d)\n",
 			__func__, err, item, value);
@@ -5954,73 +5954,6 @@ int tfa_wait_until_calibration_done(struct tfa_device *tfa)
 	}
 
 	return 0; /* timeout */
-}
-
-int tfa_efs_mtp_get(struct tfa_device *tfa)
-{
-	struct file *pf = NULL;
-	loff_t pos = 0;
-	char fname[TFA_EFS_PATH_MAX_LEN] = {0};
-	char data[TFA_EFS_DATA_MAX_LEN] = {0};
-	int value = 0, ret = 0;
-
-	snprintf(fname, TFA_EFS_PATH_MAX_LEN,
-		"%s%s", TFA_EFS_MTP_PATH,
-		(tfa->inchannel > 0) ? "_r" : "");
-	pf = filp_open(fname, O_RDONLY, 0664);
-	if (IS_ERR(pf)) {
-		pr_err("%s: feaild to open file: %s\n",
-			__func__, fname);
-		return -1;
-	}
-
-	ret = kernel_read(pf, data, TFA_EFS_DATA_MAX_LEN - 1, &pos);
-	if (ret < 0) {
-		pr_err("%s: feaild to read file: %s\n",
-			__func__, fname);
-		value = -1;
-	} else {
-		ret = kstrtou32(data, 10, &value);
-		if (ret < 0) {
-			pr_err("%s: feaild to read data: %s\n",
-				__func__, fname);
-			value = -1;
-		}
-	}
-
-	filp_close(pf, NULL);
-
-	return value;
-}
-
-int tfa_efs_mtp_set(struct tfa_device *tfa, int value)
-{
-	struct file *pf = NULL;
-	loff_t pos = 0;
-	char fname[TFA_EFS_PATH_MAX_LEN] = {0};
-	char data[TFA_EFS_DATA_MAX_LEN] = {0};
-	int ret = 0;
-
-	snprintf(fname, TFA_EFS_PATH_MAX_LEN,
-		"%s%s", TFA_EFS_MTP_PATH,
-		(tfa->inchannel > 0) ? "_r" : "");
-	pf = filp_open(fname, O_WRONLY | O_CREAT, 0664);
-	if (IS_ERR(pf)) {
-		pr_err("%s: feaild to open file: %s\n",
-			__func__, fname);
-		return -1;
-	}
-
-	snprintf(data, TFA_EFS_DATA_MAX_LEN,
-		"%d", value);
-	ret = kernel_write(pf, data, TFA_EFS_DATA_MAX_LEN - 1, &pos);
-	if (ret < 0)
-		pr_err("%s: feaild to write file: %s\n",
-			__func__, fname);
-
-	filp_close(pf, NULL);
-
-	return value;
 }
 
 enum tfa98xx_error tfa_configure_log(int enable)

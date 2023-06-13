@@ -191,8 +191,21 @@ static ssize_t rdc_show(struct device *dev,
 static ssize_t rdc_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t size)
 {
-	pr_info("%s: dev %d - not allowed to write calibration data\n",
-		__func__, tfa_get_dev_idx_from_inchannel(0));
+	int idx = tfa_get_dev_idx_from_inchannel(0);
+	int ret = 0, value = 0;
+
+	ret = kstrtou32(buf, 10, &value);
+	if (ret < 0) {
+		pr_info("%s: wronmg value: %s\n", __func__, buf);
+		return -EINVAL;
+	}
+
+	ret = tfa_set_cal_data(idx, value);
+	if (!ret) {
+		cal_data[idx].rdc = value;
+		pr_info("%s: tfa_cal - dev %d - calibration data (rdc %d)\n",
+			__func__, idx, value);
+	}
 
 	return size;
 }
@@ -244,8 +257,21 @@ static ssize_t rdc_r_show(struct device *dev,
 static ssize_t rdc_r_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t size)
 {
-	pr_info("%s: dev %d - not allowed to write calibration data\n",
-		__func__, tfa_get_dev_idx_from_inchannel(1));
+	int idx = tfa_get_dev_idx_from_inchannel(1);
+	int ret = 0, value = 0;
+
+	ret = kstrtou32(buf, 10, &value);
+	if (ret < 0) {
+		pr_info("%s: wronmg value: %s\n", __func__, buf);
+		return -EINVAL;
+	}
+
+	ret = tfa_set_cal_data(idx, value);
+	if (!ret) {
+		cal_data[idx].rdc = value;
+		pr_info("%s: tfa_cal - dev %d - calibration data (rdc %d)\n",
+			__func__, idx, value);
+	}
 
 	return size;
 }

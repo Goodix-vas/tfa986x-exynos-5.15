@@ -85,6 +85,8 @@ void tfa_restore_after_cal(int index, int cal_err);
 enum tfa98xx_error tfa_run_cal(int index, uint16_t *value);
 enum tfa98xx_error tfa_get_cal_data(int index, uint16_t *value);
 enum tfa98xx_error tfa_get_cal_data_channel(int channel, uint16_t *value);
+enum tfa98xx_error tfa_set_cal_data(int index, uint16_t value);
+enum tfa98xx_error tfa_set_cal_data_channel(int channel, uint16_t value);
 enum tfa98xx_error tfa_get_cal_temp(int index, uint16_t *value);
 enum tfa98xx_error tfa_get_cal_temp_channel(int channel, uint16_t *value);
 
@@ -105,11 +107,6 @@ enum tfa98xx_error tfa_get_vval_data_channel(int channel, uint16_t *value);
 int tfa_get_power_state(int index);
 
 int tfa_wait_until_calibration_done(struct tfa_device *tfa);
-
-#define TFA_EFS_PATH_MAX_LEN 100
-#define TFA_EFS_DATA_MAX_LEN 100
-int tfa_efs_mtp_get(struct tfa_device *tfa);
-int tfa_efs_mtp_set(struct tfa_device *tfa, int value);
 
 #endif /* __TFA_INTERNAL_H__ */
 

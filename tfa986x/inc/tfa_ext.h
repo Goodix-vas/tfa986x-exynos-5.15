@@ -78,6 +78,4 @@ int tfa98xx_update_spkt_data_channel(int channel);
 int tfa98xx_write_sknt_control(int idx, int value);
 int tfa98xx_write_sknt_control_channel(int channel, int value);
 
-#define TFA_EFS_MTP_PATH	"/efs/tfa_cal/rdc"
-
 #endif /* TFA_SRC_TFA_EXT_H_ */

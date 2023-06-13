@@ -5315,6 +5315,39 @@ enum tfa98xx_error tfa_get_cal_data_channel(int channel, uint16_t *value)
 }
 EXPORT_SYMBOL(tfa_get_cal_data_channel);
 
+enum tfa98xx_error tfa_set_cal_data(int index, uint16_t value)
+{
+	struct tfa_device *tfa = tfa98xx_get_tfa_device_from_index(index);
+	enum tfa_error err = tfa_error_ok;
+
+	if (!tfa)
+		return TFA98XX_ERROR_NOT_OPEN;
+
+	err = tfa_dev_mtp_set(tfa, TFA_MTP_RE25, value);
+	if (err != tfa_error_ok)
+		return TFA98XX_ERROR_FAIL;
+
+	if (value > 0) {
+		err = tfa_dev_mtp_set(tfa, TFA_MTP_EX, 1);
+		if (err != tfa_error_ok)
+			return TFA98XX_ERROR_FAIL;
+	}
+
+	return TFA98XX_ERROR_OK;
+}
+EXPORT_SYMBOL(tfa_set_cal_data);
+
+enum tfa98xx_error tfa_set_cal_data_channel(int channel, uint16_t value)
+{
+	int index = tfa_get_dev_idx_from_inchannel(channel);
+
+	if (index < 0 || index >= MAX_HANDLES)
+		return TFA98XX_ERROR_FAIL;
+
+	return tfa_set_cal_data(index, value);
+}
+EXPORT_SYMBOL(tfa_set_cal_data_channel);
+
 enum tfa98xx_error tfa_get_cal_temp(int index, uint16_t *value)
 {
 	struct tfa_device *tfa = tfa98xx_get_tfa_device_from_index(index);
