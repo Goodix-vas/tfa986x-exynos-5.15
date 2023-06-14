@@ -3555,7 +3555,8 @@ static void tfa98xx_container_loaded
 
 	value = tfa_dev_mtp_get(tfa98xx->tfa, TFA_MTP_RE25);
 	if (value < 0)
-		pr_info("[0x%x] error in reading calibration data\n", tfa98xx->i2c->addr);
+		pr_info("[0x%x] error in reading calibration data\n",
+			tfa98xx->i2c->addr);
 	tfa98xx->calibrate_done = (value > 0) ? 1 : 0;
 	pr_info("[0x%x] calibrate_done = EFS (%d) 0x%04x\n",
 		tfa98xx->i2c->addr, tfa98xx->calibrate_done, value);
@@ -5076,6 +5077,66 @@ static ssize_t tfa98xx_ramp_store(struct device *dev,
 	return count;
 }
 
+static ssize_t tfa98xx_intr_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct tfa98xx *tfa98xx = dev_get_drvdata(dev);
+	struct tfa_device *tfa = NULL;
+	int count = 0, value;
+
+	tfa = tfa98xx->tfa;
+	if (!tfa)
+		return -ENODEV;
+	if (tfa->tfa_family == 0) {
+		pr_err("[0x%x] %s: system is not initialized: not probed yet!\n",
+			tfa98xx->i2c->addr, __func__);
+		return -EIO;
+	}
+
+	value = tfa->interrupt_enable[0];
+	pr_debug("[0x%x] interrup_enable : 0x%04x\n",
+		tfa98xx->i2c->addr, value);
+	count = snprintf(buf, PAGE_SIZE, "%d\n", value);
+
+	return count;
+}
+
+static ssize_t tfa98xx_intr_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct tfa98xx *tfa98xx = dev_get_drvdata(dev);
+	struct tfa_device *tfa = NULL;
+	int ret = 0, value = -1;
+
+	tfa = tfa98xx->tfa;
+	if (!tfa)
+		return -ENODEV;
+	if (tfa->tfa_family == 0) {
+		pr_err("[0x%x] %s: system is not initialized: not probed yet!\n",
+			tfa98xx->i2c->addr, __func__);
+		return -EIO;
+	}
+
+	/* check string length, and account for eol */
+	if (count < 1)
+		return -EINVAL;
+
+	ret = kstrtou32(buf, 0, &value);
+	if (ret < 0 || (uint32_t)value >= (1 << tfa->irq_max)) {
+		pr_err("%s: invalid value!", __func__);
+		return -EINVAL;
+	}
+
+	pr_info("%s: interrupt_enable < 0x%04x\n", __func__, value);
+
+	mutex_lock(&tfa98xx_mutex);
+	tfa->interrupt_enable[0] = value;
+	tfa_irq_unmask(tfa);
+	mutex_unlock(&tfa98xx_mutex);
+
+	return count;
+}
+
 static struct bin_attribute dev_attr_rw = {
 	.attr = {
 		.name = "rw",
@@ -5157,6 +5218,15 @@ static struct device_attribute dev_attr_ramp = {
 	},
 	.show = tfa98xx_ramp_show,
 	.store = tfa98xx_ramp_store,
+};
+
+static struct device_attribute dev_attr_intr = {
+	.attr = {
+		.name = "intr",
+		.mode = 0600,
+	},
+	.show = tfa98xx_intr_show,
+	.store = tfa98xx_intr_store,
 };
 
 struct tfa_device *tfa98xx_get_tfa_device_from_index(int index)
@@ -6099,6 +6169,10 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	ret = device_create_file(&i2c->dev, &dev_attr_ramp);
 	if (ret)
 		dev_info(&i2c->dev, "error creating sysfs node, ramp\n");
+
+	ret = device_create_file(&i2c->dev, &dev_attr_intr);
+	if (ret)
+		dev_info(&i2c->dev, "error creating sysfs node, intr\n");
 
 	pr_info("%s Probe completed successfully!\n", __func__);
 

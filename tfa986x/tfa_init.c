@@ -343,11 +343,12 @@ static enum tfa98xx_error tfa9866_specific(struct tfa_device *tfa)
 	}
 
 	/* select interrupt flags */
-	irqmask = (TFA_BF_MSK(TFA9866_BF_IEBSTOC)
-		| TFA_BF_MSK(TFA9866_BF_IEOTDS)
+	irqmask = (TFA_BF_MSK(TFA9866_BF_IEOTDS)
 		| TFA_BF_MSK(TFA9866_BF_IEOCPR)
 		| TFA_BF_MSK(TFA9866_BF_IEUVDS)
-		| TFA_BF_MSK(TFA9866_BF_IEOVDS));
+		| TFA_BF_MSK(TFA9866_BF_IEOVDS)
+		| TFA_BF_MSK(TFA9866_BF_IEDCTH)
+		| TFA_BF_MSK(TFA9866_BF_IEBODNOK));
 	tfa->interrupt_enable[0] = irqmask; /* save mask */
 	tfa_irq_init(tfa); /* init irq regs */
 
@@ -572,11 +573,12 @@ static enum tfa98xx_error tfa9865_specific(struct tfa_device *tfa)
 	}
 
 	/* select interrupt flags */
-	irqmask = (TFA_BF_MSK(TFA9865_BF_IEBSTOC)
-		| TFA_BF_MSK(TFA9865_BF_IEOTDS)
+	irqmask = (TFA_BF_MSK(TFA9865_BF_IEOTDS)
 		| TFA_BF_MSK(TFA9865_BF_IEOCPR)
 		| TFA_BF_MSK(TFA9865_BF_IEUVDS)
-		| TFA_BF_MSK(TFA9865_BF_IEOVDS));
+		| TFA_BF_MSK(TFA9865_BF_IEOVDS)
+		| TFA_BF_MSK(TFA9865_BF_IEDCTH)
+		| TFA_BF_MSK(TFA9865_BF_IEBODNOK));
 	tfa->interrupt_enable[0] = irqmask; /* save mask */
 	tfa_irq_init(tfa); /* init irq regs */
 

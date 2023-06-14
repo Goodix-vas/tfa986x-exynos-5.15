@@ -5736,7 +5736,17 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 		|| !((tfa->daimap & TFA98XX_DAI_TDM)
 		|| TFAxx_GET_BF_VALUE(tfa, NOCLK, val)
 		|| TFAxx_GET_BF_VALUE(tfa, VDDS, val)))
-		pr_err("Misc errors detected: STATUS_FLAG0 = 0x%x\n", val);
+		pr_err("%s: Misc errors in #1 detected: STATUS_FLAG0 = 0x%x\n",
+			__func__, val);
+	if (TFAxx_GET_BF_VALUE(tfa, CLKOOR, val)
+		|| !TFAxx_GET_BF_VALUE(tfa, DCOCPOK, val)
+		|| !TFAxx_GET_BF_VALUE(tfa, OCPOAP, val)
+		|| !TFAxx_GET_BF_VALUE(tfa, OCPOAN, val)
+		|| !TFAxx_GET_BF_VALUE(tfa, OCPOBP, val)
+		|| !TFAxx_GET_BF_VALUE(tfa, OCPOBN, val)
+		|| TFAxx_GET_BF_VALUE(tfa, DCTH, val))
+		pr_err("%s: Misc errors in #2 detected: STATUS_FLAG0 = 0x%x\n",
+			__func__, val);
 
 	snprintf(reg_state, STAT_LEN, "device [%d]", tfa->dev_idx);
 
@@ -5796,7 +5806,7 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 
 	pr_debug("%s: %s\n", __func__, reg_state);
 
-	value = TFAxx_READ_REG(tfa, MANSTATE); /* STATUS_FLAGS4 */
+	value = TFAxx_READ_REG(tfa, MANSTATE); /* STATUS_FLAGS4/2 */
 	if (value < 0)
 		return -value;
 	val = (uint16_t)value;
@@ -5839,6 +5849,16 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 	}
 	if (low_noise)
 		pr_debug("%s: low noise detected\n", __func__);
+
+	value = TFAxx_READ_REG(tfa, BODNOK); /* STATUS_FLAGS3 */
+	if (value < 0)
+		return -value;
+	val = (uint16_t)value;
+
+	if (TFAxx_GET_BF_VALUE(tfa, BODNOK, val)
+		|| TFAxx_GET_BF_VALUE(tfa, QPFAIL, val))
+		pr_err("%s: Misc errors detected: STATUS_FLAG3 = 0x%x\n",
+			__func__, val);
 
 	return TFA98XX_ERROR_OK;
 }
