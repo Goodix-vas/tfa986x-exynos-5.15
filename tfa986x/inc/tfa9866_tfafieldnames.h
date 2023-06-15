@@ -2,7 +2,7 @@
  * Copyright 2020- GOODIX, All Rights Reserved.
  *
  * Filename: tfa9866_tfaFieldnames.h
- * This file was generated automatically on 06/05/23 at 10:54:22.
+ * This file was generated automatically on 06/15/23 at 10:27:45.
  * Source file: TFA9866_GPA2_N1A1_I2C_RegisterMap.xlsx
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,7 @@
 #ifndef _TFA9866_TFAFIELDNAMES_H
 #define _TFA9866_TFAFIELDNAMES_H
 
-#define TFA9866_I2CVERSION	13
+#define TFA9866_I2CVERSION	14
 
 #include "tfa9865_tfafieldnames.h"
 
@@ -185,8 +185,8 @@ enum tfa9866_bf_enum_list {
 	TFA9866_BF_IPM = 0x60e1,
 	TFA9866_BF_LDMSEG = 0x62b2,
 	TFA9866_BF_LDM = 0x63c1,
-	TFA9866_BF_ANAGAIN = 0x63e1,
-	TFA9866_BF_LPMMODE = 0x66e1,
+	TFA9866_BF_RCVM = 0x63e1,
+	TFA9866_BF_LPM = 0x66e1,
 	TFA9866_BF_TDMSRCMAP = 0x6802,
 	TFA9866_BF_TDMSRCAS = 0x6842,
 	TFA9866_BF_TDMSRCBS = 0x6872,
@@ -206,7 +206,9 @@ enum tfa9866_bf_enum_list {
 	TFA9866_BF_BYPDCLPF = 0x75d0,
 	TFA9866_BF_DCVOS = 0x7687,
 	TFA9866_BF_MUSMODE = 0x7cc0,
-	TFA9866_BF_LNMMODE = 0x7ce1,
+	TFA9866_BF_LNM = 0x7ce1,
+	TFA9866_BF_DCPTC = 0x8401,
+	TFA9866_BF_DCPL = 0x842c,
 	TFA9866_BF_EFUSEK = 0xa107,
 	TFA9866_BF_KEY1LOCKED = 0xa200,
 	TFA9866_BF_KEY2LOCKED = 0xa210,
@@ -215,6 +217,8 @@ enum tfa9866_bf_enum_list {
 	TFA9866_BF_PLLMDIV = 0xca0f,
 	TFA9866_BF_PLLSTRTM = 0xce42,
 	TFA9866_BF_DCDIS = 0xd190,
+	TFA9866_BF_PSTSLP = 0xdd70,
+	TFA9866_BF_BSTSLP = 0xdd80,
 	TFA9866_BF_SWPROFIL = 0xe00f,
 	TFA9866_BF_SWVSTEP = 0xe10f,
 	TFA9866_BF_ADC11GAIN = 0xf6a5,
@@ -272,10 +276,10 @@ tfa98xx_irq_names[] = {\
 
 enum tfa9866_from_tfa9865_bf_enum_list {
 	TFA9866_BF_DCLD = TFA9865_BF_DCLD, /* unmatched */
-	TFA9866_BF_DCPTC = TFA9865_BF_DCPTC, /* unmatched */
-	TFA9866_BF_DCPL = TFA9865_BF_DCPL, /* unmatched */
-	TFA9866_BF_LNM = TFA9865_BF_LNM, /* unmatched */
-	TFA9866_BF_RCVM = TFA9865_BF_RCVM, /* overlapped ANAGAIN(0x63e1) */
+	/* TFA9866_BF_DCPTC = 0x8401, // 0x5111 on TFA9865 */
+	/* TFA9866_BF_DCPL = 0x842c, // 0x5131 on TFA9865 */
+	/* TFA9866_BF_LNM = 0x7ce1, // 0x51d0 on TFA9865 */
+	/* TFA9866_BF_RCVM = 0x63e1, // 0x63e0 on TFA9865 */
 	/* TFA9866_BF_FLGBSS = 0x11f0, // 0x6d00 on TFA9865 */
 	TFA9866_BF_DCTRIPHYSTE = TFA9865_BF_DCTRIPHYSTE, /* unmatched */
 	TFA9866_BF_DCFBGAIN = TFA9865_BF_DCFBGAIN, /* unmatched */

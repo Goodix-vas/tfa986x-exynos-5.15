@@ -2814,26 +2814,30 @@ enum tfa98xx_error tfa_set_calibration_values(struct tfa_device *tfa)
 		case 0x66:
 			snprintf(reg_state + strlen(reg_state),
 				STAT_LEN - strlen(reg_state),
-				", LPMMODE %d",
-				TFAxx_GET_BF(tfa, LPMMODE));
+				", LPM %d",
+				TFAxx_GET_BF(tfa, LPM));
 			snprintf(reg_state + strlen(reg_state),
 				STAT_LEN - strlen(reg_state),
 				", (MUSM %d",
 				TFAxx_GET_BF(tfa, MUSMODE));
 			snprintf(reg_state + strlen(reg_state),
 				STAT_LEN - strlen(reg_state),
-				", LNMM %d)",
-				TFAxx_GET_BF(tfa, LNMMODE));
+				", RCVM %d",
+				tfa_get_bf(tfa, TFA9866_BF_RCVM));
+			snprintf(reg_state + strlen(reg_state),
+				STAT_LEN - strlen(reg_state),
+				", LNM %d)",
+				tfa_get_bf(tfa, TFA9866_BF_LNM));
 			break;
 		case 0x65:
 			snprintf(reg_state + strlen(reg_state),
 				STAT_LEN - strlen(reg_state),
 				", (RCVM %d",
-				TFAxx_GET_BF(tfa, RCVM));
+				tfa_get_bf(tfa, TFA9865_BF_RCVM));
 			snprintf(reg_state + strlen(reg_state),
 				STAT_LEN - strlen(reg_state),
 				", LNM %d)",
-				TFAxx_GET_BF(tfa, LNM));
+				tfa_get_bf(tfa, TFA9865_BF_LNM));
 			break;
 		default:
 			/* neither TFA987x */
@@ -5744,7 +5748,8 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 		|| !TFAxx_GET_BF_VALUE(tfa, OCPOAN, val)
 		|| !TFAxx_GET_BF_VALUE(tfa, OCPOBP, val)
 		|| !TFAxx_GET_BF_VALUE(tfa, OCPOBN, val)
-		|| TFAxx_GET_BF_VALUE(tfa, DCTH, val))
+		|| (TFAxx_GET_BF_VALUE(tfa, DCTH, val)
+		&& TFAxx_GET_BF(tfa, MANEDCTH)))
 		pr_err("%s: Misc errors in #2 detected: STATUS_FLAG0 = 0x%x\n",
 			__func__, val);
 
@@ -5763,7 +5768,7 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 		snprintf(reg_state + strlen(reg_state),
 			STAT_LEN - strlen(reg_state),
 			", LPMS %d", state);
-		control = TFAxx_GET_BF(tfa, LPMMODE);
+		control = TFAxx_GET_BF(tfa, LPM);
 		if ((control == 0x0 || control == 0x3)
 			&& (state == 0x1))
 			low_power = 1;
@@ -5778,13 +5783,15 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 			STAT_LEN - strlen(reg_state),
 			", LNMS %d", state);
 		musmode = TFAxx_GET_BF(tfa, MUSMODE);
-		control = TFAxx_GET_BF(tfa, LNMMODE);
+		rcvmode = tfa_get_bf(tfa, TFA9866_BF_RCVM);
+		control = tfa_get_bf(tfa, TFA9866_BF_LNM);
 		if ((control == 0x0)
 			&& (state == 0x1 && musmode == 0x1))
 			low_noise = 1;
 		snprintf(reg_state + strlen(reg_state),
 			STAT_LEN - strlen(reg_state),
-			" (MUSM %d, LNMM %d)", musmode, control);
+			" (MUSM %d, RCVM %d, LNM %d)",
+			musmode, rcvmode, control);
 		break;
 	case 0x65:
 		state = TFAxx_GET_BF(tfa, LDMS);
@@ -5793,8 +5800,8 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 			STAT_LEN - strlen(reg_state),
 			", LDMS %d (LDM %d)",
 			state, control);
-		rcvmode = TFAxx_GET_BF(tfa, RCVM);
-		control = TFAxx_GET_BF(tfa, LNM);
+		rcvmode = tfa_get_bf(tfa, TFA9865_BF_RCVM);
+		control = tfa_get_bf(tfa, TFA9865_BF_LNM);
 		snprintf(reg_state + strlen(reg_state),
 			STAT_LEN - strlen(reg_state),
 			" (RCVM %d, LNM %d)", rcvmode, control);
@@ -5855,8 +5862,10 @@ enum tfa98xx_error tfaxx_status(struct tfa_device *tfa)
 		return -value;
 	val = (uint16_t)value;
 
-	if (TFAxx_GET_BF_VALUE(tfa, BODNOK, val)
-		|| TFAxx_GET_BF_VALUE(tfa, QPFAIL, val))
+	if ((TFAxx_GET_BF_VALUE(tfa, BODNOK, val)
+		&& TFAxx_GET_BF(tfa, MANROBOD))
+		|| (TFAxx_GET_BF_VALUE(tfa, QPFAIL, val)
+		&& TFAxx_GET_BF(tfa, QALARM)))
 		pr_err("%s: Misc errors detected: STATUS_FLAG3 = 0x%x\n",
 			__func__, val);
 

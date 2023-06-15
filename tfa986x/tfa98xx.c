@@ -5703,7 +5703,7 @@ int tfa_get_power_state(int index)
 	switch (tfa->rev & 0xff) {
 	case 0x66:
 		state = TFAxx_GET_BF(tfa, LPMS);
-		control = TFAxx_GET_BF(tfa, LPMMODE);
+		control = TFAxx_GET_BF(tfa, LPM);
 		if ((control == 0x0 || control == 0x3)
 			&& (state == 0x1))
 			pm |= 0x1; /* low power */

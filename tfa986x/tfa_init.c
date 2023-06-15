@@ -329,10 +329,20 @@ static enum tfa98xx_error tfa9866_specific(struct tfa_device *tfa)
 	switch (tfa->rev) {
 	case 0x1a66: /* Initial revision ID TFA9866 N1A1 */
 		/* ----- generated code start ----- */
-		/* -----  version 13 ----- */
+		/* -----  version 14 ----- */
 		reg_write(tfa, 0x00, 0xf241); /* POR=0xf261 */
 		reg_write(tfa, 0x02, 0x0628); /* POR=0x0008 */
+		reg_write(tfa, 0x50, 0xc000); /* POR=0x8000 */
+		reg_write(tfa, 0x5a, 0x5f5e); /* POR=0x36be */
 		reg_write(tfa, 0x5b, 0x74e2); /* POR=0x7329 */
+		reg_write(tfa, 0x5c, 0x302b); /* POR=0x5e96 */
+		reg_write(tfa, 0x62, 0x05c6); /* POR=0x0582 */
+		reg_write(tfa, 0x63, 0x0614); /* POR=0x0602 */
+		reg_write(tfa, 0x68, 0x0820); /* POR=0x0c20 */
+		reg_write(tfa, 0x74, 0x61a0); /* POR=0x4cf0 */
+		reg_write(tfa, 0x75, 0x1a00); /* POR=0x1200 */
+		reg_write(tfa, 0x78, 0x0001); /* POR=0x000d */
+		reg_write(tfa, 0xdd, 0x0036); /* POR=0x005e */
 		/* ----- generated code end   ----- */
 		break;
 
@@ -526,8 +536,9 @@ static enum tfa98xx_error tfa9865_specific(struct tfa_device *tfa)
 		break;
 
 	case 0x3c65: /* TFA9865 N1C3 */
-		/* ----- generated code start(V6) ----- */
-		/* -----  version 6 ----- */
+		/* ----- generated code start ----- */
+		/* -----  version 10 ----- */
+		reg_write(tfa, 0x00, 0xc041); /* POR=0xc241 */
 		reg_write(tfa, 0x02, 0x0628); /* POR=0x0008 */
 		reg_write(tfa, 0x08, 0x01c2); /* POR=0x01d2 */
 		reg_write(tfa, 0x50, 0xc000); /* POR=0x8000 */
@@ -546,7 +557,7 @@ static enum tfa98xx_error tfa9865_specific(struct tfa_device *tfa)
 		break;
 
 	case 0x4c65: /* TFA9865 N1C4 */
-		/* ----- generated code start(V6) ----- */
+		/* ----- generated code start ----- */
 		/* -----  version 9 ----- */
 		reg_write(tfa, 0x00, 0x8041); /* POR=0x8241 */
 		reg_write(tfa, 0x02, 0x0628); /* POR=0x0008 */
