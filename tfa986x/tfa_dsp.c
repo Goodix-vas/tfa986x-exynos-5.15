@@ -3112,7 +3112,7 @@ tfa_run_speaker_startup(struct tfa_device *tfa, int force, int profile)
 		tfa_dev_mtp_get(tfa, TFA_MTP_EX);
 	if ((tfa->mtpex == 0 || tfa->reset_mtpex)
 		&& (tfa->state != TFA_STATE_OPERATING)
-		&& (tfa->active_count == tfa->dev_count)) {
+		&& (tfa->disable_auto_cal == 0)) {
 		pr_info("%s: suspend calibration until device %d is in operating state\n",
 			__func__, tfa->dev_idx);
 

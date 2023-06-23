@@ -4851,7 +4851,7 @@ static ssize_t tfa98xx_blackbox_show(struct device *dev,
 		if (ntfa == NULL)
 			continue;
 		addr = ntfa->resp_address;
-		count = snprintf(buf + strlen(buf), PAGE_SIZE,
+		count += snprintf(buf + strlen(buf), PAGE_SIZE,
 			"[0x%02x] maxX %d um, maxT %d degC, cntXmax %d, cntTmax %d, ",
 			addr,
 			tfa0->log_data[offset + ID_MAXX_LOG],
