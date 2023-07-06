@@ -2,7 +2,7 @@
  * Copyright 2020- GOODIX, All Rights Reserved.
  *
  * Filename: tfa9866_tfaFieldnames.h
- * This file was generated automatically on 06/15/23 at 10:27:45.
+ * This file was generated automatically on 07/03/23 at 11:17:29.
  * Source file: TFA9866_GPA2_N1A1_I2C_RegisterMap.xlsx
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,7 @@
 #ifndef _TFA9866_TFAFIELDNAMES_H
 #define _TFA9866_TFAFIELDNAMES_H
 
-#define TFA9866_I2CVERSION	14
+#define TFA9866_I2CVERSION	18
 
 #include "tfa9865_tfafieldnames.h"
 

@@ -36,7 +36,8 @@ extern "C" {
 /* #define TFA98XX_GIT_VERSIONS "v6.7.16+-Dec.16,2022" */
 /* #define TFA98XX_GIT_VERSIONS "v6.8.0+-Feb.23,2023" */
 /* #define TFA98XX_GIT_VERSIONS "v6.9.0+-Apr.24,2023" */
-#define TFA98XX_GIT_VERSIONS "v6.9.1+-May.18,2023"
+/* #define TFA98XX_GIT_VERSIONS "v6.9.1+-May.18,2023" */
+#define TFA98XX_GIT_VERSIONS "v6.10.0+-Jul.04,2023"
 
 #if !defined(TFA98XX_GIT_VERSIONS)
 #include "versions.h"
@@ -56,7 +57,8 @@ extern "C" {
 	/* #define TFA98XX_API_REV_STR "v6.7.16+-Dec.16,2022" */
 	/* #define TFA98XX_API_REV_STR "v6.8.0+-Feb.23,2023" */
 	/* #define TFA98XX_API_REV_STR "v6.9.0+-Apr.24,2023" */
-	#define TFA98XX_API_REV_STR "v6.9.1+-May.18,2023"
+	/* #define TFA98XX_API_REV_STR "v6.9.1+-May.18,2023" */
+	#define TFA98XX_API_REV_STR "v6.10.0+-Jul.04,2023"
 #endif
 
 #define MEMTRACK_MAX_WORDS           250
