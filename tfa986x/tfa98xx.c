@@ -1376,6 +1376,7 @@ static int tfa98xx_run_calibration(struct tfa98xx *tfa98xx0)
 	struct tfa98xx *tfa98xx;
 	struct tfa_device *tfa;
 	enum tfa_error ret, cal_err = tfa_error_ok;
+	enum tfa98xx_error err = TFA98XX_ERROR_OK;
 	int idx, ndev = tfa98xx_device_count;
 	int cal_profile = 0;
 	u64 otc_val = 1; /* calibration once by default */
@@ -1394,8 +1395,8 @@ static int tfa98xx_run_calibration(struct tfa98xx *tfa98xx0)
 	}
 
 	/* EXT_TEMP */
-	ret = tfa98xx_read_reference_temp(&temp_val);
-	if (ret) {
+	err = tfa98xx_read_reference_temp(&temp_val);
+	if (err) {
 		pr_err("%s: error in reading reference temp\n",
 			__func__);
 		temp_val = DEFAULT_REF_TEMP; /* default */
