@@ -301,7 +301,7 @@ void tfanone_ops(struct tfa_device_ops *ops)
 /***********/
 /* TFA9866 */
 /***********/
-static enum tfa98xx_error tfa9866_specific(struct tfa_device *tfa)
+static enum tfa98xx_error tfa986x_specific(struct tfa_device *tfa)
 {
 	enum tfa98xx_error error = TFA98XX_ERROR_OK;
 	unsigned short value, xor, rc;
@@ -326,26 +326,26 @@ static enum tfa98xx_error tfa9866_specific(struct tfa_device *tfa)
 	error = reg_write(tfa, 0xA0, xor);
 	tfa98xx_key2(tfa, 0);
 
-	switch (tfa->rev) {
+	switch (tfa->revid) {
 	case 0x1a66: /* Initial revision ID TFA9866 N1A1 */
 		/* ----- generated code start ----- */
-		/* -----  version 18 ----- */
+		/* -----  version 19 ----- */
 		reg_write(tfa, 0x00, 0xf241); /* POR=0xf261 */
 		reg_write(tfa, 0x02, 0x0628); /* POR=0x0008 */
-		reg_write(tfa, 0x08, 0x0062); /* POR=0x0052 */
 		reg_write(tfa, 0x50, 0xc000); /* POR=0x8000 */
 		reg_write(tfa, 0x5a, 0x5f4c); /* POR=0x36be */
 		reg_write(tfa, 0x5b, 0x74e2); /* POR=0x7329 */
 		reg_write(tfa, 0x5c, 0x302b); /* POR=0x5e96 */
 		reg_write(tfa, 0x5f, 0x00a0); /* POR=0x00c0 */
 		reg_write(tfa, 0x62, 0x05c6); /* POR=0x0582 */
-		reg_write(tfa, 0x63, 0x8614); /* POR=0x0602 */
-		reg_write(tfa, 0x67, 0x062a); /* POR=0x0602 */
+		reg_write(tfa, 0x63, 0x80d4); /* POR=0x0602 */
+		reg_write(tfa, 0x67, 0x0626); /* POR=0x0602 */
 		reg_write(tfa, 0x68, 0x0820); /* POR=0x0c20 */
-		reg_write(tfa, 0x74, 0x60c0); /* POR=0x4cf0 */
-		reg_write(tfa, 0x75, 0x0d00); /* POR=0x1200 */
+		reg_write(tfa, 0x74, 0x60f0); /* POR=0x4cf0 */
+		reg_write(tfa, 0x75, 0x0e00); /* POR=0x1200 */
 		reg_write(tfa, 0x78, 0x0001); /* POR=0x000d */
-		reg_write(tfa, 0x7c, 0x1632); /* POR=0x1602 */
+		reg_write(tfa, 0x7c, 0x10f2); /* POR=0x1602 */
+		reg_write(tfa, 0xd7, 0x1000); /* POR=0x0000 */
 		reg_write(tfa, 0xdd, 0x0036); /* POR=0x005e */
 		/* ----- generated code end   ----- */
 		break;
@@ -452,7 +452,7 @@ void tfa9866_ops(struct tfa_device_ops *ops)
 	set_ops_defaults(ops);
 
 	ops->get_mtpb = NULL; /* no mtp */
-	ops->tfa_init = tfa9866_specific;
+	ops->tfa_init = tfa986x_specific;
 	ops->set_swprof = tfa9866_set_swprofile;
 	ops->get_swprof = tfa9866_get_swprofile;
 	ops->set_swvstep = tfa9866_set_swvstep;
@@ -632,7 +632,7 @@ static int tfa9865_set_swprofile(struct tfa_device *tfa,
 static int tfa9865_get_swprofile(struct tfa_device *tfa)
 {
 	if (tfa->swprof == -1)
-		tfa->swprof = tfa_get_bf(tfa, TFA9866_BF_SWPROFIL) - 1;
+		tfa->swprof = tfa_get_bf(tfa, TFA9865_BF_SWPROFIL) - 1;
 
 	return tfa->swprof;
 }

@@ -143,6 +143,7 @@ struct tfa_device {
 	int has_msg;
 	unsigned char resp_address;
 	unsigned short rev;
+	unsigned int revid;
 	unsigned char tfa_family;
 	enum feature_support support_drc;
 	enum feature_support support_framework;

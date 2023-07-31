@@ -94,7 +94,7 @@ MODULE_PARM_DESC(fw_name, "TFA98xx DSP firmware (container file) name.");
 
 static int trace_level;
 module_param(trace_level, int, 0444);
-MODULE_PARM_DESC(trace_level, "TFA98xx debug trace level (0=off, bits:1=verbose,2=regdmesg,3=regftrace,4=timing).");
+MODULE_PARM_DESC(trace_level, "TFA98xx debug trace level (0=off, b0=verbose,b1=regdmesg,b3=timing).");
 
 static char *dflt_prof_name = "";
 module_param(dflt_prof_name, charp, 0444);
@@ -159,6 +159,26 @@ static const struct tfa98xx_rate rate_to_fssel[] = {
 static const unsigned int index_to_rate[] = {
 	5512, 8000, 11025, 16000, 22050, 32000, 44100, 48000
 };
+
+enum tfa_error tfa_convert_error_code(enum tfa98xx_error err)
+{
+	switch (err) {
+	case TFA98XX_ERROR_OK:
+		return tfa_error_ok;
+	case TFA98XX_ERROR_DEVICE:
+		return tfa_error_device;
+	case TFA98XX_ERROR_BAD_PARAMETER:
+		return tfa_error_bad_param;
+	case TFA98XX_ERROR_NO_CLOCK:
+		return tfa_error_noclock;
+	case TFA98XX_ERROR_STATE_TIMED_OUT:
+		return tfa_error_timeout;
+	case TFA98XX_ERROR_DSP_NOT_RUNNING:
+		return tfa_error_dsp;
+	default:
+		return tfa_error_other;
+	}
+}
 
 static inline char *_tfa_cont_profile_name
 (struct tfa98xx *tfa98xx, int prof_idx)
@@ -226,8 +246,8 @@ tfa98xx_tfa_start(struct tfa98xx *tfa98xx, int next_profile, int vstep)
 		}
 	}
 
-	/* Remove sticky bit by reading it once */
-	tfa_get_noclk(tfa98xx->tfa);
+	/* Remove sticky bit by writing flags */
+	tfa_reset_sticky_bits(tfa98xx->tfa);
 
 	/* A cold start erases the configuration, including interrupts setting.
 	 * Restore it if required
@@ -3897,7 +3917,7 @@ static void tfa98xx_interrupt(struct work_struct *work)
 		pr_info("%s: [%d] status flags: 0x%04x\n",
 			__func__, tfa->dev_idx, value);
 
-		if (irq_gpio != tfa98xx->irq_gpio)
+		if (irq_gpio != tfa98xx->irq_gpio) /* IRQ not shared */
 			continue;
 
 		pr_info("%s: status check on dev %d\n", __func__,
@@ -4176,6 +4196,14 @@ static int _tfa98xx_mute(struct tfa98xx *tfa98xx, int mute, int stream)
 		mutex_unlock(&tfa98xx_mutex);
 
 		cancel_delayed_work_sync(&tfa98xx->monitor_work);
+
+		/* report the status if interrupt is not enabled */
+		if (tfa98xx->irq_gpio < 0) {
+			mutex_lock(&tfa98xx->dsp_lock);
+			tfaxx_status(tfa98xx->tfa);
+			mutex_unlock(&tfa98xx->dsp_lock);
+		}
+
 		_tfa98xx_stop(tfa98xx);
 	} else {
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
@@ -4860,8 +4888,7 @@ static ssize_t tfa98xx_blackbox_show(struct device *dev,
 			tfa0->log_data[offset + ID_OVERXMAX_COUNT],
 			tfa0->log_data[offset + ID_OVERTMAX_COUNT]);
 		count += snprintf(buf + strlen(buf), PAGE_SIZE,
-			"cntVbstFail %d, maxTsurf %d degC, cntTsurfmax %d, ",
-			tfa0->log_data[offset + ID_VBOOST_FAIL_COUNT],
+			"maxTsurf %d degC, cntTsurfmax %d, ",
 			tfa0->log_data[offset + ID_MAXTSURF_LOG],
 			tfa0->log_data[offset + ID_OVERTSURFMAX_COUNT]);
 		count += snprintf(buf + strlen(buf), PAGE_SIZE,
@@ -5827,7 +5854,10 @@ int tfa98xx_write_sknt_control(int idx, int value)
 	int ret = 0;
 	int pm = 0;
 	int i, ndev, ready = 0;
-	static int data[MAX_HANDLES];
+	static int data[MAX_HANDLES] = {
+		DEFAULT_REF_TEMP, DEFAULT_REF_TEMP,
+		DEFAULT_REF_TEMP, DEFAULT_REF_TEMP
+	};
 	static int update[MAX_HANDLES];
 	struct tfa_device *ntfa = tfa98xx_get_tfa_device_from_index(idx);
 	int group = 0;
@@ -5910,7 +5940,6 @@ int tfa98xx_write_sknt_control(int idx, int value)
 			data[i] = DEFAULT_REF_TEMP;
 			continue;
 		}
-
 		if (update[i] > 0)
 			ready++;
 	}
@@ -5964,6 +5993,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	int irq_flags;
 	unsigned int reg;
 	int ret;
+	static int shared_irq = -1;
 
 	pr_info("%s: start probing\n", __func__);
 	pr_info("addr=0x%x\n", i2c->addr);
@@ -6038,8 +6068,8 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 		}
 
 		switch (reg & 0xff) {
-		case 0x66: /* tfa9866*/
-			pr_info("TFA9866 detected\n");
+		case 0x66: /* tfa986x*/
+			pr_info("TFA986x detected\n");
 			tfa98xx->flags |= TFA98XX_FLAG_TDM_DEVICE;
 			tfa98xx->flags |= TFA98XX_FLAG_CALIBRATION_CTL;
 			tfa98xx->flags |= TFA98XX_FLAG_OTP_TYPE_DEVICE;
@@ -6127,10 +6157,17 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 				ret);
 			return ret;
 		}
+		shared_irq = tfa98xx->irq_gpio;
 	} else {
-		dev_info(&i2c->dev, "Skipping IRQ registration\n");
-		/* disable feature support if gpio was invalid */
-		tfa98xx->flags |= TFA98XX_FLAG_SKIP_INTERRUPTS;
+		if (gpio_is_valid(shared_irq)) { /* IRQ shared */
+			dev_info(&i2c->dev, "IRQ GPIO shared: %d\n",
+				shared_irq);
+			tfa98xx->irq_gpio = shared_irq;
+		} else {
+			dev_info(&i2c->dev, "Skipping IRQ registration\n");
+			/* disable feature support if gpio was invalid */
+			tfa98xx->flags |= TFA98XX_FLAG_SKIP_INTERRUPTS;
+		}
 	}
 
 #if defined(CONFIG_DEBUG_FS)
