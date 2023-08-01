@@ -42,7 +42,7 @@ enum instream_state {
 
 /* tfa98xx: tfa_device_ops */
 void tfanone_ops(struct tfa_device_ops *ops);
-void tfa9866_ops(struct tfa_device_ops *ops);
+void tfa986x_ops(struct tfa_device_ops *ops);
 void tfa9865_ops(struct tfa_device_ops *ops);
 
 /* bitfield extraction macros */

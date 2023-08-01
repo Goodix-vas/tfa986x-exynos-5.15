@@ -393,7 +393,7 @@ void tfa_set_query_info(struct tfa_device *tfa)
 		tfa->ext_dsp = 1; /* set DSP-free by force */
 		tfa->advance_keys_handling = 1; /*artf65038*/
 		tfa->daimap = TFA98XX_DAI_TDM;
-		tfa9866_ops(&tfa->dev_ops); /* register device operations */
+		tfa986x_ops(&tfa->dev_ops); /* register device operations */
 		tfa->irq_all = tfa9866_irq_all;
 		tfa->irq_max = tfa9866_irq_max;
 		break;

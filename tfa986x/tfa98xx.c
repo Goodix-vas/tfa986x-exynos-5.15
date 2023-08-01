@@ -3900,7 +3900,7 @@ static void tfa98xx_interrupt(struct work_struct *work)
 	struct tfa98xx *tfa98xx;
 	struct tfa_device *tfa;
 	int irq_gpio = tfa98xx0->irq_gpio;
-	int value = 0;
+	int value0 = 0, value3 = 0;
 
 	pr_info("%s: triggered: dev %d\n",
 		__func__, tfa98xx0->tfa->dev_idx);
@@ -3911,17 +3911,17 @@ static void tfa98xx_interrupt(struct work_struct *work)
 				tfa98xx->i2c->addr);
 			continue;
 		}
-		tfa = tfa98xx->tfa;
-		value = TFAxx_READ_REG(tfa,
-			VDDS); /* STATUS_FLAGS0 */
-		pr_info("%s: [%d] status flags: 0x%04x\n",
-			__func__, tfa->dev_idx, value);
-
 		if (irq_gpio != tfa98xx->irq_gpio) /* IRQ not shared */
 			continue;
 
-		pr_info("%s: status check on dev %d\n", __func__,
-			tfa->dev_idx);
+		tfa = tfa98xx->tfa;
+		value0 = TFAxx_READ_REG(tfa, VDDS);
+		value3 = TFAxx_READ_REG(tfa, BODNOK);
+		pr_info("%s: [%d] status_flags: 0x%04x, 0x%04x\n",
+			__func__, tfa->dev_idx, value0, value3);
+
+		/* Remove sticky bit by writing flags */
+		tfa_reset_sticky_bits(tfa);
 
 		mutex_lock(&tfa98xx->dsp_lock);
 		tfa_irq_report(tfa);
@@ -6269,6 +6269,7 @@ MODULE_DEVICE_TABLE(i2c, tfa98xx_i2c_id);
 #ifdef CONFIG_OF
 static const struct of_device_id tfa98xx_dt_match[] = {
 	{.compatible = "tfa,tfa98xx"},
+	{.compatible = "tfa,tfa986x"},
 	{.compatible = "tfa,tfa9866"},
 	{.compatible = "tfa,tfa9865"},
 	{},

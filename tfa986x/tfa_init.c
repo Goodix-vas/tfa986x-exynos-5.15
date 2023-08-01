@@ -299,7 +299,7 @@ void tfanone_ops(struct tfa_device_ops *ops)
 }
 
 /***********/
-/* TFA9866 */
+/* TFA986x */
 /***********/
 static enum tfa98xx_error tfa986x_specific(struct tfa_device *tfa)
 {
@@ -378,7 +378,7 @@ static enum tfa98xx_error tfa986x_specific(struct tfa_device *tfa)
 	return error;
 }
 
-static int tfa9866_set_swprofile(struct tfa_device *tfa,
+static int tfa986x_set_swprofile(struct tfa_device *tfa,
 	unsigned short new_value)
 {
 	enum tfa98xx_error err = TFA98XX_ERROR_OK;
@@ -398,7 +398,7 @@ static int tfa9866_set_swprofile(struct tfa_device *tfa,
 	return active_value;
 }
 
-static int tfa9866_get_swprofile(struct tfa_device *tfa)
+static int tfa986x_get_swprofile(struct tfa_device *tfa)
 {
 	if (tfa->swprof == -1)
 		tfa->swprof = tfa_get_bf(tfa, TFA9866_BF_SWPROFIL) - 1;
@@ -406,7 +406,7 @@ static int tfa9866_get_swprofile(struct tfa_device *tfa)
 	return tfa->swprof;
 }
 
-static int tfa9866_set_swvstep(struct tfa_device *tfa,
+static int tfa986x_set_swvstep(struct tfa_device *tfa,
 	unsigned short new_value)
 {
 	/* Set the new value in the struct */
@@ -415,7 +415,7 @@ static int tfa9866_set_swvstep(struct tfa_device *tfa,
 	return new_value;
 }
 
-static int tfa9866_get_swvstep(struct tfa_device *tfa)
+static int tfa986x_get_swvstep(struct tfa_device *tfa)
 {
 	return tfa->vstep; /* vstep is not used */
 }
@@ -423,7 +423,7 @@ static int tfa9866_get_swvstep(struct tfa_device *tfa)
 /* tfa98xx_dsp_system_stable
  *  return: *ready = 1 when clocks are stable to allow DSP subsystem access
  */
-static enum tfa98xx_error tfa9866_dsp_system_stable(struct tfa_device *tfa,
+static enum tfa98xx_error tfa986x_dsp_system_stable(struct tfa_device *tfa,
 	int *ready)
 {
 	enum tfa98xx_error error = TFA98XX_ERROR_OK;
@@ -434,7 +434,7 @@ static enum tfa98xx_error tfa9866_dsp_system_stable(struct tfa_device *tfa,
 	return error;
 }
 
-static int tfa9866_set_bitfield(struct tfa_device *tfa,
+static int tfa986x_set_bitfield(struct tfa_device *tfa,
 	uint16_t bitfield, uint16_t value)
 {
 	uint16_t reg = (bitfield >> 8) & 0xff;
@@ -446,20 +446,20 @@ static int tfa9866_set_bitfield(struct tfa_device *tfa,
 		return tfa_set_bf(tfa, (uint16_t)bitfield, value);
 }
 
-void tfa9866_ops(struct tfa_device_ops *ops)
+void tfa986x_ops(struct tfa_device_ops *ops)
 {
 	/* Set defaults for ops */
 	set_ops_defaults(ops);
 
 	ops->get_mtpb = NULL; /* no mtp */
 	ops->tfa_init = tfa986x_specific;
-	ops->set_swprof = tfa9866_set_swprofile;
-	ops->get_swprof = tfa9866_get_swprofile;
-	ops->set_swvstep = tfa9866_set_swvstep;
-	ops->get_swvstep = tfa9866_get_swvstep;
-	ops->dsp_system_stable = tfa9866_dsp_system_stable;
+	ops->set_swprof = tfa986x_set_swprofile;
+	ops->get_swprof = tfa986x_get_swprofile;
+	ops->set_swvstep = tfa986x_set_swvstep;
+	ops->get_swvstep = tfa986x_get_swvstep;
+	ops->dsp_system_stable = tfa986x_dsp_system_stable;
 	ops->set_mute = tfa_set_mute_nodsp;
-	ops->set_bitfield = tfa9866_set_bitfield;
+	ops->set_bitfield = tfa986x_set_bitfield;
 }
 
 /***********/
