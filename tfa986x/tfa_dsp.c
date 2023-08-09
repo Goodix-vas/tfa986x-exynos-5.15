@@ -4211,36 +4211,6 @@ int tfa_reset(struct tfa_device *tfa)
 }
 
 /*
- * Write all the bytes specified by num_bytes and data
- */
-enum tfa98xx_error
-tfa98xx_write_data(struct tfa_device *tfa,
-	unsigned char subaddress, int num_bytes,
-	const unsigned char data[])
-{
-	enum tfa98xx_error error = TFA98XX_ERROR_OK;
-	/* subaddress followed by data */
-	const int bytes2write = num_bytes + 1;
-	unsigned char *write_data;
-
-	if (num_bytes > TFA2_MAX_PARAM_SIZE)
-		return TFA98XX_ERROR_BAD_PARAMETER;
-
-	write_data = (unsigned char *)
-		kmem_cache_alloc(tfa->cachep, GFP_KERNEL);
-	if (write_data == NULL)
-		return TFA98XX_ERROR_FAIL;
-
-	write_data[0] = subaddress;
-	memcpy(&write_data[1], data, num_bytes);
-
-	error = tfa98xx_write_raw(tfa, bytes2write, write_data);
-
-	kmem_cache_free(tfa->cachep, write_data);
-	return error;
-}
-
-/*
  * fill the calibration value as milli ohms in the struct
  * assume that the device has been calibrated
  */

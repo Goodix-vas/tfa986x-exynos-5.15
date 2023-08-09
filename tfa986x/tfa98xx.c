@@ -70,6 +70,7 @@ static int tfa98xx_sync_count;
 static int tfa98xx_monitor_count;
 #define MONITOR_COUNT_MAX 5
 static int tfa98xx_cnt_reload;
+static int (*tfa_i2c_err_callback)(int addr, int err);
 
 static LIST_HEAD(profile_list); /* list of user selectable profiles */
 static int tfa98xx_mixer_profiles; /* number of user selectable profiles */
@@ -3158,6 +3159,8 @@ retry:
 			msleep(I2C_RETRY_DELAY);
 			goto retry;
 		}
+		if (tfa_i2c_err_callback != NULL)
+			tfa_i2c_err_callback((int)tfa98xx->i2c->addr, ret);
 		return TFA98XX_ERROR_FAIL;
 	}
 
@@ -3201,6 +3204,8 @@ retry:
 			msleep(I2C_RETRY_DELAY);
 			goto retry;
 		}
+		if (tfa_i2c_err_callback != NULL)
+			tfa_i2c_err_callback((int)tfa98xx->i2c->addr, ret);
 		return TFA98XX_ERROR_FAIL;
 	}
 	*val = value & 0xffff;
@@ -3254,114 +3259,6 @@ int tfa98xx_writeread_dsp(void *tfa,
 	return TFA98XX_ERROR_NOT_SUPPORTED;
 }
 
-enum tfa98xx_error tfa98xx_read_data(struct tfa_device *tfa,
-	unsigned char reg,
-	int len, unsigned char value[])
-{
-	enum tfa98xx_error error = TFA98XX_ERROR_OK;
-	struct tfa98xx *tfa98xx;
-	struct i2c_client *tfa98xx_client;
-	int err;
-	int tries = 0;
-	unsigned char *reg_buf = NULL;
-	struct i2c_msg msgs[] = {
-		{
-			.flags = 0,
-			.len = 1,
-			.buf = NULL,
-		}, {
-			.flags = I2C_M_RD,
-			.len = len,
-			.buf = value,
-		},
-	};
-
-	reg_buf = (unsigned char *)
-		kmalloc(sizeof(reg), GFP_DMA); /* GRP_KERNEL also works */
-	if (!reg_buf)
-		return -ENOMEM;
-
-	*reg_buf = reg;
-	msgs[0].buf = reg_buf;
-
-	if (tfa == NULL) {
-		pr_err("No device available\n");
-		return TFA98XX_ERROR_FAIL;
-	}
-
-	tfa98xx = (struct tfa98xx *)tfa->data;
-	if (tfa98xx->i2c) {
-		tfa98xx_client = tfa98xx->i2c;
-		msgs[0].addr = tfa98xx_client->addr;
-		msgs[1].addr = tfa98xx_client->addr;
-
-		do {
-			err = i2c_transfer(tfa98xx_client->adapter, msgs,
-				ARRAY_SIZE(msgs));
-			if (err != ARRAY_SIZE(msgs))
-				msleep_interruptible(I2C_RETRY_DELAY);
-		} while ((err != ARRAY_SIZE(msgs)) && (++tries < I2C_RETRIES));
-
-		if (err != ARRAY_SIZE(msgs)) {
-			dev_err(&tfa98xx_client->dev,
-				"read transfer error %d\n", err);
-			error = TFA98XX_ERROR_FAIL;
-		}
-
-		if (tfa98xx_kmsg_regs)
-			dev_dbg(&tfa98xx_client->dev,
-				"RD-DAT reg=0x%02x, len=%d\n",
-				reg, len);
-	} else {
-		pr_err("No device available\n");
-		error = TFA98XX_ERROR_FAIL;
-	}
-
-	kfree(reg_buf);
-
-	return error;
-}
-
-enum tfa98xx_error tfa98xx_write_raw(struct tfa_device *tfa,
-	int len,
-	const unsigned char data[])
-{
-	enum tfa98xx_error error = TFA98XX_ERROR_OK;
-	struct tfa98xx *tfa98xx;
-	int ret;
-	int retries = I2C_RETRIES;
-
-	if (tfa == NULL) {
-		pr_err("No device available\n");
-		return TFA98XX_ERROR_FAIL;
-	}
-
-	tfa98xx = (struct tfa98xx *)tfa->data;
-
-retry:
-	ret = i2c_master_send(tfa98xx->i2c, data, len);
-	if (ret < 0) {
-		pr_warn("i2c error, retries left: %d\n", retries);
-		if (retries) {
-			retries--;
-			msleep(I2C_RETRY_DELAY);
-			goto retry;
-		}
-	}
-
-	if (ret == len) {
-		if (tfa98xx_kmsg_regs)
-			dev_dbg(tfa98xx->dev,
-				"WR-RAW len=%d\n", len);
-		return TFA98XX_ERROR_OK;
-	}
-	pr_err("WR-RAW (len=%d) Error I2C send size mismatch %d\n",
-		len, ret);
-	error = TFA98XX_ERROR_FAIL;
-
-	return error;
-}
-
 int tfa_ext_register(dsp_send_message_t tfa_send_message,
 	dsp_read_message_t tfa_read_message,
 	tfa_event_handler_t *tfa_event_handler)
@@ -3386,7 +3283,7 @@ int tfa_ext_register(dsp_send_message_t tfa_send_message,
 		}
 	}
 
-	if (tfa_event_handler != NULL)
+	if (tfa_event_handler == NULL)
 		tfa_event_handler
 			= (tfa_event_handler_t *)tfa_ext_event_handler;
 
@@ -3398,6 +3295,14 @@ int tfa_ext_register(dsp_send_message_t tfa_send_message,
 	return 0;
 }
 EXPORT_SYMBOL(tfa_ext_register);
+
+int tfa_i2c_err_register(tfa_i2c_err_handler_t tfa_i2c_err_handler)
+{
+	if (tfa_i2c_err_handler != NULL)
+		tfa_i2c_err_callback = tfa_i2c_err_handler;
+
+	return 0;
+}
 
 int tfa_set_blackbox(int enable)
 {

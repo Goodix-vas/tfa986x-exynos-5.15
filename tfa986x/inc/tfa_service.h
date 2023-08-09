@@ -480,29 +480,6 @@ enum tfa98xx_error tfa98xx_dsp_write_mem_word(struct tfa_device *tfa,
 	unsigned short address, int value, int memtype);
 
 /*
- * Read data from dsp memory
- * @param tfa the device struct pointer
- * @param subaddress write address to set in address register
- * @param num_bytes number of bytes to read from dsp
- * @param data the unsigned char buffer to read data into
- */
-enum tfa98xx_error tfa98xx_read_data(struct tfa_device *tfa,
-	unsigned char subaddress, int num_bytes, unsigned char data[]);
-
-/*
- * Write all the bytes specified by num_bytes and data to dsp memory
- * @param tfa the device struct pointer
- * @param subaddress the subaddress to write to
- * @param num_bytes number of bytes to write
- * @param data actual data to write
- */
-enum tfa98xx_error tfa98xx_write_data(struct tfa_device *tfa,
-	unsigned char subaddress, int num_bytes, const unsigned char data[]);
-
-enum tfa98xx_error tfa98xx_write_raw(struct tfa_device *tfa,
-	int num_bytes, const unsigned char data[]);
-
-/*
  * convert signed 24 bit integers to 32bit aligned bytes
  * input:   data contains "num_bytes/3" int24 elements
  * output:  bytes contains "num_bytes" byte elements

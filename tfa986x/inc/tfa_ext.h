@@ -42,6 +42,10 @@ int tfa_ext_register(dsp_send_message_t tfa_send_message,
 	dsp_read_message_t tfa_read_message,
 	tfa_event_handler_t *tfa_event_handler);
 
+typedef int (*tfa_i2c_err_handler_t)(int addr, int err);
+
+int tfa_i2c_err_register(tfa_i2c_err_handler_t tfa_i2c_err_handler);
+
 #define TSURFMAX 42
 
 enum tfa98xx_blackbox_id {
