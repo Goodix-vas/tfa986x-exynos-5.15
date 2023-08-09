@@ -3303,6 +3303,7 @@ int tfa_i2c_err_register(tfa_i2c_err_handler_t tfa_i2c_err_handler)
 
 	return 0;
 }
+EXPORT_SYMBOL(tfa_i2c_err_register);
 
 int tfa_set_blackbox(int enable)
 {
