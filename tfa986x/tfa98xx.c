@@ -70,7 +70,7 @@ static int tfa98xx_sync_count;
 static int tfa98xx_monitor_count;
 #define MONITOR_COUNT_MAX 5
 static int tfa98xx_cnt_reload;
-static int (*tfa_i2c_err_callback)(int addr, int err);
+static int (*tfa_i2c_err_callback)(int addr, int err, int rw, int cnt);
 
 static LIST_HEAD(profile_list); /* list of user selectable profiles */
 static int tfa98xx_mixer_profiles; /* number of user selectable profiles */
@@ -3156,11 +3156,12 @@ retry:
 		pr_warn("i2c error, retries left: %d\n", retries);
 		if (retries) {
 			retries--;
+			if (tfa_i2c_err_callback != NULL)
+				tfa_i2c_err_callback((int)tfa98xx->i2c->addr,
+					ret, 1, I2C_RETRIES - retries);
 			msleep(I2C_RETRY_DELAY);
 			goto retry;
 		}
-		if (tfa_i2c_err_callback != NULL)
-			tfa_i2c_err_callback((int)tfa98xx->i2c->addr, ret);
 		return TFA98XX_ERROR_FAIL;
 	}
 
@@ -3201,11 +3202,12 @@ retry:
 			subaddress, retries);
 		if (retries) {
 			retries--;
+			if (tfa_i2c_err_callback != NULL)
+				tfa_i2c_err_callback((int)tfa98xx->i2c->addr,
+					ret, 0, I2C_RETRIES - retries);
 			msleep(I2C_RETRY_DELAY);
 			goto retry;
 		}
-		if (tfa_i2c_err_callback != NULL)
-			tfa_i2c_err_callback((int)tfa98xx->i2c->addr, ret);
 		return TFA98XX_ERROR_FAIL;
 	}
 	*val = value & 0xffff;
@@ -5174,8 +5176,11 @@ struct tfa_device *tfa98xx_get_tfa_device_from_index(int index)
 	if (index < 0 || index >= MAX_HANDLES)
 		return NULL;
 
-	if (tfadevset[index] != NULL)
-		return tfadevset[index];
+	if (tfadevset[index] != NULL) {
+		ntfa = tfadevset[index];
+		if (ntfa->dev_idx == index)
+			return ntfa;
+	}
 
 	list_for_each_entry(tfa98xx, &tfa98xx_device_list, list) {
 		if (tfa98xx->tfa->dev_idx == index) {
