@@ -2,8 +2,8 @@
  * Copyright 2020- GOODIX, All Rights Reserved.
  *
  * Filename: tfa9865_tfaFieldnames.h
- * This file was generated automatically on 06/07/23 at 12:08:40.
- * Source file: TFA9865_GPA1_N1C4_I2C_RegisterMap.xlsx
+ * This file was generated automatically on 05/30/23 at 18:01:46.
+ * Source file: TFA9865_GPA1_N1C3_I2C_RegisterMap.xlsx
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -13,7 +13,7 @@
 #ifndef _TFA9865_TFAFIELDNAMES_H
 #define _TFA9865_TFAFIELDNAMES_H
 
-#define TFA9865_I2CVERSION	9
+#define TFA9865_I2CVERSION	10
 
 enum tfa9865_bf_enum_list {
 	TFA9865_BF_PWDN = 0x0000,
@@ -182,7 +182,6 @@ enum tfa9865_bf_enum_list {
 	TFA9865_BF_TDMSRCCS = 0x6902,
 	TFA9865_BF_TDMSRCDS = 0x6932,
 	TFA9865_BF_TDMSRCES = 0x6962,
-	TFA9865_BF_FLGBSS = 0x6d00,
 	TFA9865_BF_IPMS = 0x6e00,
 	TFA9865_BF_LVLCLPPWM = 0x6f72,
 	TFA9865_BF_DCIE = 0x7060,

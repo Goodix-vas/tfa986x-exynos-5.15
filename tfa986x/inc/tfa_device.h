@@ -129,8 +129,6 @@ struct tfa98xx_buffer_pool {
 /* MAX_HANDLES * ID_BLACKBOX_MAX */
 #define LOG_BUFFER_SIZE 36
 
-#define PARAM_COUNT_MAX	15
-
 /*
  * This is the main tfa device context structure, it will carry all information
  * that is needed to handle a single I2C device instance.
@@ -219,7 +217,6 @@ struct tfa_device {
 	int disable_auto_cal;
 	int dummy_cal;
 	int inchannel;
-	int custom_param[PARAM_COUNT_MAX];
 };
 
 #if defined(TFA_STEREO_NODE)

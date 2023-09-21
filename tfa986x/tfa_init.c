@@ -329,7 +329,7 @@ static enum tfa98xx_error tfa986x_specific(struct tfa_device *tfa)
 	switch (tfa->revid) {
 	case 0x1a66: /* Initial revision ID TFA9866 N1A1 */
 		/* ----- generated code start ----- */
-		/* -----  version 19 ----- */
+		/* -----  version 21 ----- */
 		reg_write(tfa, 0x00, 0xf241); /* POR=0xf261 */
 		reg_write(tfa, 0x02, 0x0628); /* POR=0x0008 */
 		reg_write(tfa, 0x50, 0xc000); /* POR=0x8000 */
@@ -352,7 +352,7 @@ static enum tfa98xx_error tfa986x_specific(struct tfa_device *tfa)
 
 	default:
 		pr_info("\nWarning: Optimal settings not found for device with revid = 0x%x\n",
-			tfa->rev);
+			tfa->revid);
 		break;
 	}
 

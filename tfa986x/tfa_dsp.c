@@ -1233,19 +1233,6 @@ enum tfa98xx_error dsp_msg(struct tfa_device *tfa,
 	char *buf = (char *)buf24;
 	int length = length24;
 
-	if (buf[1] == (0x80 | MODULE_CUSTOM)) {
-		switch (buf[2]) {
-		case CUSTOM_PARAM_SET_PARAMS:
-			tfa_get_custom_paramter(buf);
-			return error;
-		case CUSTOM_PARAM_GET_PARAMS:
-			tfa->individual_msg = 2;
-			return error;
-		default:
-			break;
-		}
-	}
-
 	if (tfa98xx_count_active_stream(BIT_PSTREAM) == 0) {
 		pr_info("%s: skip if PSTREAM is lost\n", __func__);
 		tfa->individual_msg = 0;
@@ -1348,33 +1335,6 @@ enum tfa98xx_error dsp_msg_read(struct tfa_device *tfa,
 	int i;
 	int length = length24;
 	unsigned char *bytes = bytes24;
-
-	if (tfa->individual_msg == 2) {  /* CUSTOM_PARAM_GET_PARAMS */
-		struct tfa_device *ntfa = NULL;
-		int idx = 0, dev = 0, value;
-
-		for (i = 0; i < length24 / 3; i++) {
-			if (i % PARAM_COUNT_MAX == 0)
-				ntfa = tfa98xx_get_tfa_device_from_index(dev++);
-			if (ntfa) {
-				value = ntfa->custom_param[i % PARAM_COUNT_MAX];
-				bytes24[idx++] = (value >> 16) & 0xff;
-				bytes24[idx++] = (value >> 8) & 0xff;
-				bytes24[idx++] = value & 0xff;
-			} else {
-				bytes24[idx++] = 0;
-				bytes24[idx++] = 0;
-				bytes24[idx++] = 0;
-			}
-
-			if (idx >= length24)
-				break;
-		}
-
-		tfa->individual_msg = 0;
-
-		return error;
-	}
 
 	if (tfa98xx_count_active_stream(BIT_PSTREAM) == 0) {
 		pr_info("%s: skip if PSTREAM is lost\n", __func__);

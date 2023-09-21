@@ -20,9 +20,6 @@
 
 #define TEMP_OFFSET	((1 + 2) * 3)
 static void tfa_overwrite_temp(struct tfa_device *tfa, char *data_buf);
-#define PARAM_INDEX_OFFSET	(1 * 3)
-#define PARAM_COUNT_OFFSET	(2 * 3)
-#define PARAM_LIST_OFFSET	(3 * 3)
 
 /* module globals */
 static uint8_t gresp_address; /* in case of setting with option */
@@ -375,49 +372,6 @@ static void tfa_overwrite_temp(struct tfa_device *tfa, char *data_buf)
 		data_buf[TEMP_OFFSET + 2]);
 }
 
-int tfa_get_custom_paramter(char *data_buf)
-{
-	struct tfa_device *ntfa = NULL;
-	int idx, param_index = 0, param_count = 0;
-	int data[PARAM_COUNT_MAX * MAX_HANDLES] = {0};
-
-	if ((data_buf[1] != (0x80 | MODULE_CUSTOM))
-		|| data_buf[2] != CUSTOM_PARAM_SET_PARAMS)
-		return 0;
-
-	param_index = (data_buf[PARAM_INDEX_OFFSET] << 16)
-		+ (data_buf[PARAM_INDEX_OFFSET + 1] << 8)
-		+ data_buf[PARAM_INDEX_OFFSET + 2];
-	if (param_index > PARAM_COUNT_MAX - 1)
-		param_index = PARAM_COUNT_MAX - 1;
-
-	param_count = (data_buf[PARAM_COUNT_OFFSET] << 16)
-		+ (data_buf[PARAM_COUNT_OFFSET + 1] << 8)
-		+ data_buf[PARAM_COUNT_OFFSET + 2];
-	if (param_index + param_count > PARAM_COUNT_MAX)
-		param_count = PARAM_COUNT_MAX - param_index;
-
-	/* set index by skipping command and counter */
-	pr_info("%s: custom parameter in msg 0x%02x%02x%02x, @ 0x%02x (%d items)\n",
-		__func__, data_buf[0], data_buf[1], data_buf[2],
-		param_index, param_count);
-
-	tfa98xx_convert_bytes2data(param_count * 3 * MAX_HANDLES,
-		data_buf + PARAM_LIST_OFFSET, data);
-
-	for (idx = 0; idx < MAX_HANDLES; idx++) {
-		ntfa = tfa98xx_get_tfa_device_from_index(idx);
-		if (!ntfa)
-			continue;
-
-		memcpy(ntfa->custom_param + param_index,
-			data + (idx * param_count),
-			param_count * sizeof(int));
-	}
-
-	return 1;
-}
-
 /*
  * write a parameter file to the device
  * The VstepIndex and VstepMsgIndex are only used to write
@@ -521,10 +475,7 @@ enum tfa98xx_error tfa_cont_write_file(struct tfa_device *tfa,
 			((struct tfa_patch_file *)hdr)->data);
 		break;
 	case info_hdr:
-		size = hdr->size - sizeof(struct tfa_msg_file);
-		data_buf = (char *)((struct tfa_msg_file *)hdr)->data;
-
-		tfa_get_custom_paramter(data_buf);
+		/* Ignore */
 		break;
 	default:
 		pr_err("Header is of unknown type: 0x%x\n", type);
@@ -996,8 +947,7 @@ enum tfa98xx_error tfa_cont_write_files(struct tfa_device *tfa)
 
 	/* process the list and write all files */
 	for (i = 0; i < dev->length; i++) {
-		if (dev->list[i].type == dsc_file
-			|| dev->list[i].type == dsc_info_file) {
+		if (dev->list[i].type == dsc_file) {
 			file = (struct tfa_file_dsc *)
 				(dev->list[i].offset + (uint8_t *)tfa->cnt);
 			if (tfa_cont_write_file
@@ -1099,7 +1049,6 @@ enum tfa98xx_error tfa_cont_write_files_prof(struct tfa_device *tfa,
 	for (i = 0; i < prof->length; i++) {
 		switch (prof->list[i].type) {
 		case dsc_file:
-		case dsc_info_file:
 			file = (struct tfa_file_dsc *)
 				(prof->list[i].offset + (uint8_t *)tfa->cnt);
 			err = tfa_cont_write_file(tfa, file,
@@ -1631,7 +1580,6 @@ enum tfa98xx_error tfa_cont_write_profile(struct tfa_device *tfa,
 		/* process and write all non-file items */
 		switch (prof->list[i].type) {
 		case dsc_file:
-		case dsc_info_file:
 		case dsc_patch:
 		case dsc_set_input_select:
 		case dsc_set_output_select:
@@ -1727,8 +1675,7 @@ enum tfa98xx_error tfa_cont_write_profile(struct tfa_device *tfa,
 				break;
 
 			type = previous_prof_tfadsp->list[i].type;
-			if (type != dsc_file && type != dsc_info_file
-				&& type != dsc_patch)
+			if (type != dsc_file && type != dsc_patch)
 				continue;
 
 			/* Only write this once */
@@ -1769,7 +1716,6 @@ enum tfa98xx_error tfa_cont_write_profile(struct tfa_device *tfa,
 
 		switch (prof_tfadsp->list[i].type) {
 		case dsc_file:
-		case dsc_info_file:
 		case dsc_patch:
 			/* For tiberius stereo 1 device does not have a dsp! */
 			if (tfa->ext_dsp == 0)

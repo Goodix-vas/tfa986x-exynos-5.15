@@ -64,6 +64,7 @@ static struct kmem_cache *tfa98xx_cache;
 /* Mutex protected data */
 static DEFINE_MUTEX(tfa98xx_mutex);
 static DEFINE_MUTEX(probe_lock);
+static DEFINE_MUTEX(overlay_lock);
 static LIST_HEAD(tfa98xx_device_list);
 static int tfa98xx_device_count;
 static int tfa98xx_sync_count;
@@ -222,6 +223,11 @@ tfa98xx_tfa_start(struct tfa98xx *tfa98xx, int next_profile, int vstep)
 		start_time = ktime_get_boottime();
 
 	err = tfa_dev_start(tfa98xx->tfa, next_profile, vstep);
+
+	if (err == tfa_error_ok
+		&& tfa98xx->overlay_bf != 0xffff)
+		queue_delayed_work(tfa98xx->tfa98xx_wq,
+			&tfa98xx->overlay_work, 0);
 
 	if (trace_level & 8) {
 		stop_time = ktime_get_boottime();
@@ -3520,6 +3526,14 @@ static void tfa98xx_container_loaded
 		tfa_reset(tfa98xx->tfa);
 	}
 
+	if (tfa98xx->tfa->rev == 0x1a66) {
+		/* overlay amp_ciff_trim on TFA9866N1A1 */
+		tfa98xx->overlay_bf = 0xf053;
+		tfa98xx->overlay_val = 0xf;
+	} else {
+		tfa98xx->overlay_bf = 0xffff;
+	}
+
 	/* Preload settings using internal clock on TFA2 */
 	if (tfa98xx->tfa->tfa_family == 2) {
 		mutex_lock(&tfa98xx->dsp_lock);
@@ -3599,6 +3613,11 @@ static void tfa98xx_monitor(struct work_struct *work)
 	}
 
 	mutex_lock(&tfa98xx->dsp_lock);
+	if (tfa98xx->overlay_bf != 0xffff)
+		pr_info("%s: current value at 0x%04x: 0x%04x\n",
+			__func__, tfa98xx->overlay_bf,
+			tfa_get_bf(tfa98xx->tfa,
+			tfa98xx->overlay_bf));
 	error = tfaxx_status(tfa98xx->tfa);
 	mutex_unlock(&tfa98xx->dsp_lock);
 
@@ -3840,6 +3859,46 @@ static void tfa98xx_interrupt(struct work_struct *work)
 
 	/* unmask interrupts masked in IRQ handler */
 	tfa_irq_unmask(tfa98xx0->tfa);
+}
+
+static void tfa98xx_overlay(struct work_struct *work)
+{
+	struct tfa98xx *tfa98xx
+		= container_of(work, struct tfa98xx, overlay_work.work);
+	struct tfa_device *tfa;
+	int value = -1;
+
+	if (tfa98xx->overlay_bf == 0xffff)
+		return;
+	if (tfa98xx->tfa == NULL)
+		return;
+
+	mutex_lock(&overlay_lock);
+
+	tfa = tfa98xx->tfa;
+	if (TFA_GET_BF(tfa, PWDN) != 0) {
+		pr_info("%s: [%d] stopped when powered down\n",
+			__func__, tfa->dev_idx);
+		mutex_unlock(&overlay_lock);
+		return;
+	}
+
+	value = tfa_get_bf(tfa, tfa98xx->overlay_bf);
+	if (value == tfa98xx->overlay_val) {
+		pr_info("%s: [%d] overlaid (0x%04x at 0x%04x)\n",
+			__func__, tfa->dev_idx,
+			value, tfa98xx->overlay_bf);
+		mutex_unlock(&overlay_lock);
+		return;
+	}
+
+	tfa_set_bf_volatile(tfa,
+		tfa98xx->overlay_bf, tfa98xx->overlay_val);
+
+	queue_delayed_work(tfa98xx->tfa98xx_wq,
+		&tfa98xx->overlay_work, HZ / 10);
+
+	mutex_unlock(&overlay_lock);
 }
 
 static int tfa98xx_startup(struct snd_pcm_substream *substream,
@@ -4170,6 +4229,8 @@ static int _tfa98xx_stop(struct tfa98xx *tfa98xx)
 	if (tfa98xx->dsp_fw_state != TFA98XX_DSP_FW_OK)
 		return 0;
 
+	cancel_delayed_work(&tfa98xx->overlay_work);
+
 	mutex_lock(&tfa98xx->dsp_lock);
 	tfa_dev_stop(tfa98xx->tfa);
 	tfa98xx->dsp_init = TFA98XX_DSP_INIT_STOPPED;
@@ -4234,6 +4295,7 @@ static int tfa98xx_probe(struct snd_soc_component *component)
 
 	INIT_DELAYED_WORK(&tfa98xx->monitor_work, tfa98xx_monitor);
 	INIT_DELAYED_WORK(&tfa98xx->interrupt_work, tfa98xx_interrupt);
+	INIT_DELAYED_WORK(&tfa98xx->overlay_work, tfa98xx_overlay);
 
 	tfa98xx->component = component;
 
@@ -4261,6 +4323,7 @@ static void tfa98xx_remove(struct snd_soc_component *component)
 
 	tfa98xx_interrupt_enable(tfa98xx, false);
 
+	cancel_delayed_work_sync(&tfa98xx->overlay_work);
 	cancel_delayed_work_sync(&tfa98xx->interrupt_work);
 	cancel_delayed_work_sync(&tfa98xx->monitor_work);
 
@@ -5075,6 +5138,59 @@ static ssize_t tfa98xx_intr_store(struct device *dev,
 	return count;
 }
 
+static ssize_t tfa98xx_overlay_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct tfa98xx *tfa98xx = dev_get_drvdata(dev);
+	struct tfa_device *tfa = NULL;
+	int count = 0, value;
+
+	tfa = tfa98xx->tfa;
+	if (!tfa)
+		return -ENODEV;
+	if (tfa->tfa_family == 0) {
+		pr_err("[0x%x] %s: system is not initialized: not probed yet!\n",
+			tfa98xx->i2c->addr, __func__);
+		return -EIO;
+	}
+
+	value = tfa_get_bf(tfa, tfa98xx->overlay_bf);
+	pr_info("%s: [0x%x] current value at 0x%04x: 0x%04x (0x%04x if overlaid)\n",
+		__func__, tfa98xx->i2c->addr,
+		tfa98xx->overlay_bf, value,
+		tfa98xx->overlay_val);
+	count = snprintf(buf, PAGE_SIZE, "%d\n", value);
+
+	return count;
+}
+
+static ssize_t tfa98xx_overlay_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct tfa98xx *tfa98xx = dev_get_drvdata(dev);
+	int ret = 0, value = -1;
+
+	/* check string length, and account for eol */
+	if (count < 1)
+		return -EINVAL;
+
+	ret = kstrtou32(buf, 0, &value);
+	if (ret < 0) {
+		pr_err("%s: invalid value!", __func__);
+		return -EINVAL;
+	}
+
+	tfa98xx->overlay_bf = (value >> 16) & 0xffff;
+	tfa98xx->overlay_val = value & 0xffff;
+
+	pr_info("%s: [0x%x] request to overlay with 0x%04x at 0x%04x\n",
+		__func__, tfa98xx->i2c->addr,
+		tfa98xx->overlay_val,
+		tfa98xx->overlay_bf);
+
+	return count;
+}
+
 static struct bin_attribute dev_attr_rw = {
 	.attr = {
 		.name = "rw",
@@ -5165,6 +5281,15 @@ static struct device_attribute dev_attr_intr = {
 	},
 	.show = tfa98xx_intr_show,
 	.store = tfa98xx_intr_store,
+};
+
+static struct device_attribute dev_attr_overlay = {
+	.attr = {
+		.name = "overlay",
+		.mode = 0600,
+	},
+	.show = tfa98xx_overlay_show,
+	.store = tfa98xx_overlay_store,
 };
 
 struct tfa_device *tfa98xx_get_tfa_device_from_index(int index)
@@ -6124,6 +6249,10 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	ret = device_create_file(&i2c->dev, &dev_attr_intr);
 	if (ret)
 		dev_info(&i2c->dev, "error creating sysfs node, intr\n");
+
+	ret = device_create_file(&i2c->dev, &dev_attr_overlay);
+	if (ret)
+		dev_info(&i2c->dev, "error creating sysfs node, overlay\n");
 
 	pr_info("%s Probe completed successfully!\n", __func__);
 

@@ -85,6 +85,7 @@ struct tfa98xx {
 	struct delayed_work init_work;
 	struct delayed_work monitor_work;
 	struct delayed_work interrupt_work;
+	struct delayed_work overlay_work;
 	struct mutex dsp_lock;
 	int dsp_init;
 	int dsp_fw_state;
@@ -124,7 +125,8 @@ struct tfa98xx {
 	bool set_mtp_cal;
 	uint16_t cal_data;
 	int calibrate_done;
-	int istatus;
+	uint16_t overlay_bf;
+	uint16_t overlay_val;
 };
 
 #endif /* __TFA98XX_INC__ */

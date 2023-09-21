@@ -135,12 +135,10 @@ enum tfa_fw_event { /* not all available on each device */
 
 /* Custom commands: aligned with wrapper */
 /* SET */
-#define CUSTOM_PARAM_SET_PARAMS         0x00
 #define CUSTOM_PARAM_SET_TSURF          0x01
 #define CUSTOM_PARAM_SET_BYPASS         0x02
 
 /* GET */
-#define CUSTOM_PARAM_GET_PARAMS         0x80
 #define CUSTOM_PARAM_GET_CONFIGURED     0x81
 
 /* old version */

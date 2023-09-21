@@ -58,8 +58,6 @@ int tfa98xx_buffer_pool_access(int r_index,
 
 int tfa98xx_get_fssel(unsigned int rate);
 
-void tfa98xx_key2(struct tfa_device *tfa, int lock);
-
 struct tfa_device *tfa98xx_get_tfa_device_from_index(int index);
 struct tfa_device *tfa98xx_get_tfa_device_from_channel(int channel);
 
@@ -78,8 +76,6 @@ void tfa_reset_active_handle(struct tfa_device *tfa);
 int tfa_is_active_device(struct tfa_device *tfa);
 
 void tfa_handle_damaged_speakers(struct tfa_device *tfa);
-
-int tfa_get_custom_paramter(char *data_buf);
 
 void tfa_restore_after_cal(int index, int cal_err);
 enum tfa98xx_error tfa_run_cal(int index, uint16_t *value);

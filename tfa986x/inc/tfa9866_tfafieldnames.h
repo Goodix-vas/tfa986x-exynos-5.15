@@ -2,7 +2,7 @@
  * Copyright 2020- GOODIX, All Rights Reserved.
  *
  * Filename: tfa9866_tfaFieldnames.h
- * This file was generated automatically on 07/25/23 at 10:47:58.
+ * This file was generated automatically on 09/21/23 at 10:29:53.
  * Source file: TFA9866_GPA2_N1A1_I2C_RegisterMap.xlsx
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,7 @@
 #ifndef _TFA9866_TFAFIELDNAMES_H
 #define _TFA9866_TFAFIELDNAMES_H
 
-#define TFA9866_I2CVERSION	19
+#define TFA9866_I2CVERSION	21
 
 #include "tfa9865_tfafieldnames.h"
 
@@ -76,7 +76,6 @@ enum tfa9866_bf_enum_list {
 	TFA9866_BF_AMPS = 0x11a0,
 	TFA9866_BF_AREFS = 0x11b0,
 	TFA9866_BF_CLIPS = 0x11c0,
-	TFA9866_BF_LDMS = 0x11d0,
 	TFA9866_BF_VGBS = 0x11e0,
 	TFA9866_BF_FLGBSS = 0x11f0,
 	TFA9866_BF_MANSTATE = 0x1203,
@@ -84,7 +83,7 @@ enum tfa9866_bf_enum_list {
 	TFA9866_BF_TDMSTAT = 0x1282,
 	TFA9866_BF_QPCLKSTS = 0x12b1,
 	TFA9866_BF_WAITSYNC = 0x12d0,
-	TFA9866_BF_NRPSSTS = 0x12e0,
+	TFA9866_BF_LDMS = 0x12e0,
 	TFA9866_BF_BODNOK = 0x1300,
 	TFA9866_BF_QPFAIL = 0x1310,
 	TFA9866_BF_BATS = 0x1509,
@@ -275,12 +274,12 @@ tfa98xx_irq_names[] = {\
 }
 
 enum tfa9866_from_tfa9865_bf_enum_list {
+	/* TFA9866_BF_LDMS = 0x12e0, // 0x11d0 on TFA9865 */
 	TFA9866_BF_DCLD = TFA9865_BF_DCLD, /* unmatched */
 	/* TFA9866_BF_DCPTC = 0x8401, // 0x5111 on TFA9865 */
 	/* TFA9866_BF_DCPL = 0x842c, // 0x5131 on TFA9865 */
 	/* TFA9866_BF_LNM = 0x7ce1, // 0x51d0 on TFA9865 */
 	/* TFA9866_BF_RCVM = 0x63e1, // 0x63e0 on TFA9865 */
-	/* TFA9866_BF_FLGBSS = 0x11f0, // 0x6d00 on TFA9865 */
 	TFA9866_BF_DCTRIPHYSTE = TFA9865_BF_DCTRIPHYSTE, /* unmatched */
 	TFA9866_BF_DCFBGAIN = TFA9865_BF_DCFBGAIN, /* unmatched */
 };
